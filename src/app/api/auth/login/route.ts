@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import db from '@/lib/db';
 import { signJwt } from '@/lib/auth';
+import { ensureInitialData } from '@/lib/seedHelper';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    // Ensure default users & categories exist on first run/serverless
+    await ensureInitialData();
+
     const { username, password, rememberMe } = await req.json();
 
     if (!username || !password) {
@@ -81,6 +87,6 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (err: any) {
     console.error('Login error:', err);
-    return NextResponse.json({ error: 'Terjadi kesalahan pada server.' }, { status: 500 });
+    return NextResponse.json({ error: 'Terjadi kesalahan pada server saat login.' }, { status: 500 });
   }
 }
