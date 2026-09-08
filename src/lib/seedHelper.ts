@@ -6,16 +6,95 @@ let isSeeding = false;
 export async function ensureInitialData() {
   if (isSeeding) return;
   try {
+    isSeeding = true;
+
+    // 1. Ensure tables exist in SQLite
+    try {
+      await db.user.count();
+    } catch (err: any) {
+      console.log('Tables not found, creating SQLite schema dynamically...');
+      // Execute raw table creation
+      await db.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "users" (
+          "id" TEXT PRIMARY KEY,
+          "username" TEXT UNIQUE NOT NULL,
+          "email" TEXT UNIQUE NOT NULL,
+          "password_hash" TEXT NOT NULL,
+          "full_name" TEXT,
+          "role" TEXT DEFAULT 'VIEWER',
+          "status" TEXT DEFAULT 'ACTIVE',
+          "avatar" TEXT,
+          "created_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
+          "updated_at" DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await db.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "categories" (
+          "id" TEXT PRIMARY KEY,
+          "name" TEXT UNIQUE NOT NULL,
+          "icon" TEXT DEFAULT '📁',
+          "color" TEXT DEFAULT 'blue',
+          "status" TEXT DEFAULT 'ACTIVE',
+          "display_order" INTEGER DEFAULT 0,
+          "created_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
+          "updated_at" DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await db.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "links" (
+          "id" TEXT PRIMARY KEY,
+          "name" TEXT NOT NULL,
+          "description" TEXT,
+          "url" TEXT NOT NULL,
+          "category_id" TEXT NOT NULL,
+          "icon" TEXT DEFAULT '🔗',
+          "status" TEXT DEFAULT 'ACTIVE',
+          "is_quick_access" BOOLEAN DEFAULT 0,
+          "display_order" INTEGER DEFAULT 0,
+          "click_count" INTEGER DEFAULT 0,
+          "created_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
+          "updated_at" DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await db.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "link_clicks" (
+          "id" TEXT PRIMARY KEY,
+          "link_id" TEXT NOT NULL,
+          "user_id" TEXT,
+          "ip_address" TEXT,
+          "user_agent" TEXT,
+          "clicked_at" DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await db.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "user_favorites" (
+          "id" TEXT PRIMARY KEY,
+          "user_id" TEXT NOT NULL,
+          "link_id" TEXT NOT NULL,
+          "created_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE("user_id", "link_id")
+        );
+      `);
+      await db.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "system_settings" (
+          "id" TEXT PRIMARY KEY,
+          "key" TEXT UNIQUE NOT NULL,
+          "value" TEXT NOT NULL,
+          "description" TEXT,
+          "updated_at" DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    }
+
     const userCount = await db.user.count();
     if (userCount > 0) return;
 
-    isSeeding = true;
-    console.log('Database empty. Auto-seeding initial data...');
+    console.log('Database empty. Auto-seeding initial admin and viewer users...');
 
     const adminPassword = await bcrypt.hash('admin123', 10);
     const viewerPassword = await bcrypt.hash('viewer123', 10);
 
-    const admin = await db.user.create({
+    await db.user.create({
       data: {
         username: 'admin',
         email: 'admin@linkhub.local',
@@ -27,7 +106,7 @@ export async function ensureInitialData() {
       },
     });
 
-    const viewer = await db.user.create({
+    await db.user.create({
       data: {
         username: 'viewer',
         email: 'viewer@linkhub.local',
