@@ -1,0 +1,99 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  username      String         @unique
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  fullName      String?        @map("full_name")
+  role          String         @default("VIEWER") // "ADMIN" or "VIEWER"
+  status        String         @default("ACTIVE") // "ACTIVE" or "INACTIVE"
+  avatar        String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  clicks        LinkClick[]
+  favorites     UserFavorite[]
+
+  @@map("users")
+}
+
+model Category {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  icon         String   @default("📁")
+  color        String?  @default("blue")
+  status       String   @default("ACTIVE") // "ACTIVE" or "INACTIVE"
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  links        Link[]
+
+  @@map("categories")
+}
+
+model Link {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  url           String
+  categoryId    String         @map("category_id")
+  icon          String?        @default("🔗")
+  status        String         @default("ACTIVE") // "ACTIVE" or "INACTIVE"
+  isQuickAccess Boolean        @default(false) @map("is_quick_access")
+  displayOrder  Int            @default(0) @map("display_order")
+  clickCount    Int            @default(0) @map("click_count")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  clicks        LinkClick[]
+  favorites     UserFavorite[]
+
+  @@map("links")
+}
+
+model LinkClick {
+  id        String   @id @default(cuid())
+  linkId    String   @map("link_id")
+  userId    String?  @map("user_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  clickedAt DateTime @default(now()) @map("clicked_at")
+
+  link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("link_clicks")
+}
+
+model UserFavorite {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  linkId    String   @map("link_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, linkId])
+  @@map("user_favorites")
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
