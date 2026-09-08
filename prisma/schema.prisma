@@ -1,6 +1,6 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -13,8 +13,8 @@ model User {
   email         String         @unique
   passwordHash  String         @map("password_hash")
   fullName      String?        @map("full_name")
-  role          String         @default("VIEWER") // "ADMIN" or "VIEWER"
-  status        String         @default("ACTIVE") // "ACTIVE" or "INACTIVE"
+  role          String         @default("VIEWER")
+  status        String         @default("ACTIVE")
   avatar        String?
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
@@ -30,7 +30,7 @@ model Category {
   name         String   @unique
   icon         String   @default("📁")
   color        String?  @default("blue")
-  status       String   @default("ACTIVE") // "ACTIVE" or "INACTIVE"
+  status       String   @default("ACTIVE")
   displayOrder Int      @default(0) @map("display_order")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -47,7 +47,7 @@ model Link {
   url           String
   categoryId    String         @map("category_id")
   icon          String?        @default("🔗")
-  status        String         @default("ACTIVE") // "ACTIVE" or "INACTIVE"
+  status        String         @default("ACTIVE")
   isQuickAccess Boolean        @default(false) @map("is_quick_access")
   displayOrder  Int            @default(0) @map("display_order")
   clickCount    Int            @default(0) @map("click_count")
