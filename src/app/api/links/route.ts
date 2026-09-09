@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import { ensureInitialData } from '@/lib/seedHelper';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    await ensureInitialData();
-
     const user = await getSessionUser(req);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

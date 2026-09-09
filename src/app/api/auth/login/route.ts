@@ -8,8 +8,15 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    // Ensure default users & categories exist on first run/serverless
-    await ensureInitialData();
+    // Only ensure default users if database is completely empty
+    try {
+      const count = await db.user.count();
+      if (count === 0) {
+        await ensureInitialData();
+      }
+    } catch (e) {
+      await ensureInitialData();
+    }
 
     const { username, password, rememberMe } = await req.json();
 
