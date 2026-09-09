@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -24,14 +26,14 @@ export async function PUT(
     const updated = await db.link.update({
       where: { id: linkId },
       data: {
-        ...(name && { name: name.trim() }),
-        description: description !== undefined ? description?.trim() : undefined,
-        ...(formattedUrl && { url: formattedUrl }),
-        ...(categoryId && { categoryId }),
-        ...(icon !== undefined && { icon }),
-        ...(status && { status }),
-        ...(isQuickAccess !== undefined && { isQuickAccess: Boolean(isQuickAccess) }),
-        ...(displayOrder !== undefined && { displayOrder: Number(displayOrder) }),
+        name: name ? name.trim() : undefined,
+        description: description !== undefined ? (description ? description.trim() : null) : undefined,
+        url: formattedUrl || undefined,
+        categoryId: categoryId || undefined,
+        icon: icon !== undefined ? icon : undefined,
+        status: status || undefined,
+        isQuickAccess: isQuickAccess !== undefined ? Boolean(isQuickAccess) : undefined,
+        displayOrder: displayOrder !== undefined ? Number(displayOrder) : undefined,
       },
       include: {
         category: true,
@@ -41,7 +43,7 @@ export async function PUT(
     return NextResponse.json({ success: true, link: updated });
   } catch (err: any) {
     console.error('Admin PUT link error:', err);
-    return NextResponse.json({ error: 'Gagal memperbarui link.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Gagal memperbarui link.' }, { status: 500 });
   }
 }
 
@@ -57,14 +59,17 @@ export async function DELETE(
 
     const linkId = params.id;
 
-    await db.link.delete({
-      where: { id: linkId },
-    });
+    // Delete relation records first to prevent foreign key constraint issues in PostgreSQL
+    await db.$transaction([
+      db.linkClick.deleteMany({ where: { linkId } }),
+      db.userFavorite.deleteMany({ where: { linkId } }),
+      db.link.delete({ where: { id: linkId } }),
+    ]);
 
     return NextResponse.json({ success: true, message: 'Link berhasil dihapus.' });
   } catch (err: any) {
     console.error('Admin DELETE link error:', err);
-    return NextResponse.json({ error: 'Gagal menghapus link.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Gagal menghapus link.' }, { status: 500 });
   }
 }
 
@@ -89,6 +94,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, link: updated });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Gagal mengubah status link.' }, { status: 500 });
+    console.error('Admin PATCH link error:', err);
+    return NextResponse.json({ error: err.message || 'Gagal mengubah status link.' }, { status: 500 });
   }
 }

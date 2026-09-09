@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
     const where: any = {};
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { description: { contains: search } },
-        { url: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { url: { contains: search, mode: 'insensitive' } },
       ];
     }
     if (categoryId && categoryId !== 'all') {
@@ -88,6 +88,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, link });
   } catch (err: any) {
     console.error('Admin POST link error:', err);
-    return NextResponse.json({ error: 'Gagal membuat link.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Gagal membuat link.' }, { status: 500 });
   }
 }

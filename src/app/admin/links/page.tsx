@@ -132,7 +132,8 @@ function AdminLinksContent() {
       showToast('Link berhasil dihapus dari database', 'success');
       loadData();
     } else {
-      showToast('Gagal menghapus link', 'error');
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error || 'Gagal menghapus link', 'error');
     }
   };
 

@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import db from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -44,7 +46,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, user: updated });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Gagal memperbarui user.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Gagal memperbarui user.' }, { status: 500 });
   }
 }
 
@@ -68,12 +70,14 @@ export async function DELETE(
       );
     }
 
-    await db.user.delete({
-      where: { id: userId },
-    });
+    await db.$transaction([
+      db.linkClick.deleteMany({ where: { userId } }),
+      db.userFavorite.deleteMany({ where: { userId } }),
+      db.user.delete({ where: { id: userId } }),
+    ]);
 
     return NextResponse.json({ success: true, message: 'User berhasil dihapus.' });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Gagal menghapus user.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Gagal menghapus user.' }, { status: 500 });
   }
 }

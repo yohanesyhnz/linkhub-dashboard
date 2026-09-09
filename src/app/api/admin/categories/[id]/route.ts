@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -29,7 +31,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, category: updated });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Gagal memperbarui kategori.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Gagal memperbarui kategori.' }, { status: 500 });
   }
 }
 
@@ -82,6 +84,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Kategori berhasil dihapus.' });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Gagal menghapus kategori.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Gagal menghapus kategori.' }, { status: 500 });
   }
 }
